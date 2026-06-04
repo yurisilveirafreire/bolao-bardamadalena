@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolão do Madá — Copa 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#0e4a1a;--verde2:#1a6b2a;--verde3:#2d8a3e;
+  --amarelo:#f5c800;--amarelo2:#ffd700;
+  --bg:#0a2e10;--card:#0f3d18;--card2:#163f1e;
+  --text:#fff;--muted:#7abf85;--muted2:#4a8a55;--red:#c0392b;
+}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 0% 0%,rgba(245,200,0,.05) 0%,transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(245,200,0,.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+.nav{display:flex;align-items:center;gap:4px;padding:10px 14px;background:#071409;border-bottom:3px solid var(--amarelo);position:relative;z-index:10;flex-wrap:wrap}
+.nav-logo{display:flex;align-items:center;gap:8px;margin-right:12px}
+.nav-logo-text{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amarelo);letter-spacing:.06em;line-height:1}
+.nav-logo-sub{font-size:8px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;line-height:1}
+.nav-btn{padding:7px 14px;border-radius:4px;border:2px solid transparent;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;letter-spacing:.05em;text-transform:uppercase}
+.nav-btn.active{background:var(--amarelo);color:#071409;border-color:var(--amarelo)}
+.nav-btn:not(.active){background:transparent;color:var(--muted);border-color:rgba(245,200,0,.15)}
+.nav-btn:hover:not(.active){border-color:var(--amarelo);color:var(--amarelo)}
+.nav-spacer{flex:1}
+.btn-logout{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--muted);cursor:pointer;border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:5px 10px;background:transparent;letter-spacing:.04em;text-transform:uppercase;transition:.2s}
+.btn-logout:hover{color:#e74c3c;border-color:rgba(192,57,43,.4)}
+.conn-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:4px;border:2px solid}
+.conn-ok{color:var(--verde3);border-color:rgba(45,138,62,.4);background:rgba(45,138,62,.1)}
+.conn-err{color:#e74c3c;border-color:rgba(192,57,43,.4);background:rgba(192,57,43,.1)}
+.conn-wait{color:var(--amarelo);border-color:rgba(245,200,0,.3);background:rgba(245,200,0,.08)}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1s infinite}
+.view{display:none;position:relative;z-index:1}
+.view.active{display:block}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--card);border:2px solid rgba(245,200,0,.35);border-radius:14px;padding:28px 24px;max-width:340px;width:100%;position:relative;overflow:hidden}
+.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amarelo),var(--verde3),var(--amarelo))}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--amarelo);letter-spacing:.06em;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:20px}
+.modal-field{margin-bottom:12px}
+.modal-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase}
+.modal-field input{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:.2s}
+.modal-field input:focus{border-color:var(--amarelo)}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+.btn-modal-ok{flex:1;padding:11px;background:var(--amarelo);border:none;border-radius:7px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#071409;cursor:pointer;letter-spacing:.06em}
+.btn-modal-cancel{flex:1;padding:11px;background:transparent;border:2px solid rgba(255,255,255,.1);border-radius:7px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);cursor:pointer;letter-spacing:.06em}
+.modal-err{background:rgba(192,57,43,.15);border:2px solid rgba(192,57,43,.4);border-radius:7px;padding:9px;font-size:12px;color:#e74c3c;margin-top:10px;text-align:center}
+/* CLIENTE */
+.client-hero{background:linear-gradient(180deg,#071409 0%,var(--bg) 100%);padding:24px 20px 18px;text-align:center;border-bottom:2px solid rgba(245,200,0,.2)}
+.stars-row{display:flex;justify-content:center;gap:5px;margin-bottom:8px}
+.star{color:var(--amarelo);font-size:13px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:.06em;line-height:1;color:var(--text)}
+.hero-title span{color:var(--amarelo)}
+.hero-sub{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--amarelo);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.goool-text{font-family:'Bebas Neue',sans-serif;font-size:11px;color:var(--muted2);margin-top:5px;font-style:italic}
+.client-body{padding:14px}
+.section-label{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;color:var(--amarelo);letter-spacing:.1em;text-transform:uppercase;margin:16px auto 10px;max-width:800px;padding-bottom:8px;border-bottom:2px solid rgba(245,200,0,.2)}
+.jogos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;max-width:800px;margin:0 auto 18px}
+.jogo-card-sel{background:var(--card);border:2px solid rgba(245,200,0,.25);border-radius:12px;padding:16px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.jogo-card-sel::after{content:'';position:absolute;bottom:0;right:0;width:48px;height:48px;border-bottom:4px solid var(--amarelo);border-right:4px solid var(--amarelo);border-radius:34px 0 0 0}
+.jogo-card-sel:hover,.jogo-card-sel.selected{border-color:var(--amarelo);transform:translateY(-2px)}
+.jogo-card-sel.selected{background:rgba(245,200,0,.06)}
+.jogo-fase-tag{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--amarelo);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.jogo-times-row{display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em}
+.jogo-vs-badge{background:var(--amarelo);color:#071409;font-family:'Bebas Neue',sans-serif;font-size:13px;padding:3px 8px;border-radius:5px}
+.jogo-info-sm{text-align:center;font-size:11px;color:var(--muted);margin-top:8px}
+.timer-strip{background:rgba(245,200,0,.07);border:1px solid rgba(245,200,0,.18);border-radius:8px;padding:7px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+.timer-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.timer-v{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);letter-spacing:.06em}
+.badge-aberto{background:rgba(45,138,62,.15);color:var(--verde3);border:1px solid rgba(45,138,62,.4);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;padding:2px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;display:inline-block;margin-left:6px}
+.form-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;max-width:520px;margin:0 auto;position:relative;overflow:hidden}
+.form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amarelo),var(--verde3),var(--amarelo))}
+.form-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:var(--amarelo);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase}
+.field input{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:.2s}
+.field input:focus{border-color:var(--amarelo);background:rgba(245,200,0,.04)}
+.placar-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-bottom:8px}
+.placar-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+.placar-inp{width:70px;background:var(--card2);border:3px solid rgba(245,200,0,.3);border-radius:10px;padding:8px 6px;color:var(--amarelo);font-family:'Bebas Neue',sans-serif;font-size:40px;text-align:center;outline:none;transition:.2s;-moz-appearance:textfield}
+.placar-inp::-webkit-inner-spin-button,.placar-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.placar-inp:focus{border-color:var(--amarelo);box-shadow:0 0 0 3px rgba(245,200,0,.12)}
+.placar-x{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--muted2)}
+.placar-times-lbl{text-align:center;font-size:11px;color:var(--muted2);margin-bottom:14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.04em}
+.btn-apostar{width:100%;padding:13px;background:linear-gradient(135deg,var(--amarelo),var(--amarelo2));border:none;border-radius:8px;color:#071409;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.1em;cursor:pointer;transition:.2s}
+.btn-apostar:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(245,200,0,.25)}
+.btn-apostar:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.msg-ok{background:rgba(45,138,62,.15);border:2px solid var(--verde3);border-radius:8px;padding:12px;font-size:13px;color:#6ddb7e;margin-top:10px;text-align:center}
+.msg-err{background:rgba(192,57,43,.12);border:2px solid rgba(192,57,43,.4);border-radius:8px;padding:10px;font-size:13px;color:#e74c3c;margin-top:10px;text-align:center}
+.empty{text-align:center;padding:40px 20px;color:var(--muted2)}
+.empty-icon{font-size:36px;margin-bottom:8px}
+.empty-text{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.06em}
+/* COMPROVANTE */
+.comp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center;padding:16px}
+.comp-overlay.show{display:flex}
+.comp-box{background:var(--card);border:3px solid var(--amarelo);border-radius:16px;max-width:360px;width:100%;overflow:hidden}
+.comp-header{background:linear-gradient(135deg,var(--verde),var(--verde2));padding:18px 20px;text-align:center;position:relative}
+.comp-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--amarelo)}
+.comp-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--amarelo);letter-spacing:.08em;line-height:1;margin-top:8px}
+.comp-sub{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.comp-body{padding:18px}
+.comp-num-area{text-align:center;background:rgba(245,200,0,.08);border:2px solid rgba(245,200,0,.2);border-radius:10px;padding:10px;margin-bottom:14px}
+.comp-num-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.comp-num{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--amarelo);line-height:1}
+.comp-placar{font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--text);text-align:center;line-height:1;margin-bottom:4px}
+.comp-jogo{text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.comp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+.comp-row:last-of-type{border:none}
+.comp-row span:first-child{color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em}
+.comp-row span:last-child{font-weight:600}
+.comp-footer{background:rgba(245,200,0,.05);border-top:2px solid rgba(245,200,0,.15);padding:10px 18px;text-align:center;font-size:11px;color:var(--muted);line-height:1.6;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.comp-footer span{color:var(--amarelo)}
+.comp-btns{display:flex;gap:8px;padding:0 18px 14px}
+.btn-fechar{flex:1;padding:10px;background:var(--amarelo);border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#071409;cursor:pointer}
+.btn-imprimir{flex:1;padding:10px;background:transparent;border:2px solid rgba(255,255,255,.12);border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);cursor:pointer}
+/* TV */
+#view-tv{padding:0;min-height:calc(100vh - 48px)}
+.tv-wrap{background:linear-gradient(180deg,#051008 0%,var(--bg) 100%);min-height:100%}
+.tv-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#051008;border-bottom:4px solid var(--amarelo);gap:10px;flex-wrap:wrap}
+.tv-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);letter-spacing:.06em;line-height:1}
+.tv-logo-sub{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.tv-live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(192,57,43,.2);border:2px solid #e74c3c;border-radius:4px;padding:3px 10px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#e74c3c;letter-spacing:.08em;margin-top:4px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#e74c3c;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.tv-jogo-center{text-align:center}
+.tv-fase{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:var(--amarelo);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px}
+.tv-times-str{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em;color:var(--text)}
+.tv-placar-live{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--amarelo);line-height:1;letter-spacing:.08em;text-align:center}
+.tv-status-str{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;text-align:center;margin-top:2px}
+.tv-timer-area{text-align:right}
+.tv-timer-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.tv-timer-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);letter-spacing:.06em;line-height:1}
+.tv-toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#071409;border-bottom:1px solid rgba(245,200,0,.15);flex-wrap:wrap}
+.tv-tabs{display:flex;gap:6px;overflow-x:auto;flex:1}
+.tv-tab{padding:6px 14px;border-radius:4px;border:2px solid rgba(245,200,0,.2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;cursor:pointer;transition:.15s;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:transparent;white-space:nowrap}
+.tv-tab.active{background:var(--amarelo);color:#071409;border-color:var(--amarelo)}
+.tv-tab:hover:not(.active){border-color:var(--amarelo);color:var(--amarelo)}
+.btn-fullscreen{padding:6px 14px;border-radius:4px;border:2px solid rgba(245,200,0,.3);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:.05em;text-transform:uppercase;color:var(--amarelo);background:transparent;white-space:nowrap;transition:.15s}
+.btn-fullscreen:hover{background:rgba(245,200,0,.1)}
+.tv-body{display:grid;grid-template-columns:1fr 300px;gap:12px;padding:12px 16px}
+.tv-lista-hdr{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--amarelo);letter-spacing:.1em;text-transform:uppercase;padding-bottom:8px;border-bottom:2px solid rgba(245,200,0,.25);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.tv-count{background:var(--amarelo);color:#071409;font-family:'Bebas Neue',sans-serif;font-size:18px;padding:1px 10px;border-radius:4px}
+.aposta-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;margin-bottom:5px;background:var(--card);border:1px solid rgba(255,255,255,.05);transition:.4s}
+.aposta-item.ganhador{background:rgba(45,138,62,.22);border:2px solid var(--verde3);animation:pulseG 2s infinite}
+@keyframes pulseG{0%,100%{box-shadow:0 0 0 0 rgba(45,138,62,.4)}50%{box-shadow:0 0 0 6px rgba(45,138,62,0)}}
+.aposta-num{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--muted2);min-width:38px}
+.aposta-nome-area{flex:1}
+.aposta-nome-txt{font-size:14px;font-weight:700;display:block}
+.aposta-wa-mask{font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif}
+.aposta-palpite{text-align:right;min-width:80px}
+.aposta-palpite-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--amarelo);line-height:1}
+.aposta-hora{font-size:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700}
+.aposta-ganhou-badge{background:var(--verde3);color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:10px;padding:2px 8px;border-radius:3px;text-transform:uppercase;margin-top:2px;display:inline-block}
+.vencedor-destaque{background:linear-gradient(135deg,rgba(45,138,62,.3),rgba(45,138,62,.1));border:3px solid var(--verde3);border-radius:12px;padding:14px;text-align:center;animation:pulseG 2s infinite}
+.venc-trophy{font-size:32px;margin-bottom:4px}
+.venc-pos{font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--verde3);letter-spacing:.08em}
+.venc-nome-big{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);letter-spacing:.04em;line-height:1.1}
+.venc-palpite{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);margin:2px 0}
+.venc-hora{font-size:11px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700}
+.venc-premio{font-size:12px;color:var(--verde3);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tv-premios{background:var(--card);border:2px solid rgba(245,200,0,.2);border-radius:12px;padding:12px;position:relative;overflow:hidden}
+.tv-premios::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amarelo),transparent)}
+.tv-premios h3{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--amarelo);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.premio-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.premio-item:last-child{border:none}
+.premio-pos{font-family:'Bebas Neue',sans-serif;font-size:26px;min-width:26px;line-height:1}
+.pos1{color:var(--amarelo2)}.pos2{color:#c0c8d0}.pos3{color:#cd8f32}.posN{color:var(--muted2)}
+.premio-desc{font-size:12px;font-weight:600;line-height:1.3}
+.premio-ganhador{font-size:11px;color:var(--verde3);font-family:'Barlow Condensed',sans-serif;font-weight:700;margin-top:2px}
+/* ADMIN */
+#view-admin{padding:14px}
+.admin-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid rgba(245,200,0,.2);gap:10px;flex-wrap:wrap}
+.admin-title{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amarelo);letter-spacing:.06em}
+.admin-tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:2px solid rgba(245,200,0,.15);padding-bottom:0}
+.admin-tab{padding:8px 16px;border:none;background:transparent;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;border-bottom:3px solid transparent;transition:.15s;margin-bottom:-2px}
+.admin-tab.active{color:var(--amarelo);border-bottom-color:var(--amarelo)}
+.admin-panel{display:none}
+.admin-panel.active{display:block}
+.novo-jogo-form{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden}
+.novo-jogo-form::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--verde3),var(--amarelo))}
+.novo-jogo-form h3{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:var(--amarelo);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.a-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.a-field{margin-bottom:10px}
+.a-field label{display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase}
+.a-input{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,.08);border-radius:7px;padding:9px 11px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none;transition:.2s}
+.a-input:focus{border-color:var(--amarelo)}
+.a-select{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,.08);border-radius:7px;padding:9px 11px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none}
+.btn-criar{padding:11px 24px;background:linear-gradient(135deg,var(--amarelo),var(--amarelo2));border:none;border-radius:7px;color:#071409;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.08em;cursor:pointer;transition:.2s}
+.btn-criar:hover{opacity:.9;transform:translateY(-1px)}
+.jogo-admin-card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.jogo-admin-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amarelo),transparent)}
+.jogo-admin-card.oculto{opacity:.45}
+.jac-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.jac-times{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);letter-spacing:.04em}
+.jac-info{font-size:12px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+.jac-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.jac-placar-row{display:flex;align-items:center;gap:8px}
+.jac-placar-inp{width:56px;background:var(--card2);border:2px solid rgba(245,200,0,.3);border-radius:8px;padding:6px;color:var(--amarelo);font-family:'Bebas Neue',sans-serif;font-size:30px;text-align:center;outline:none;-moz-appearance:textfield}
+.jac-placar-inp::-webkit-inner-spin-button,.jac-placar-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.jac-placar-inp:focus{border-color:var(--amarelo)}
+.jac-x{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted2)}
+.jac-sub{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.premios-mini-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.premios-mini-row span{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);min-width:20px}
+.premios-mini-row input{flex:1;background:var(--card2);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:6px 8px;color:var(--text);font-family:'Barlow',sans-serif;font-size:12px;outline:none}
+.premios-mini-row input:focus{border-color:var(--amarelo)}
+.jac-btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn-jac{padding:8px 14px;border:2px solid transparent;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:.2s}
+.btn-jac.primary{background:var(--amarelo);color:#071409;border-color:var(--amarelo)}
+.btn-jac.danger{background:transparent;color:#e74c3c;border-color:rgba(192,57,43,.4)}
+.btn-jac.muted{background:transparent;color:var(--muted);border-color:rgba(255,255,255,.12)}
+.status-pill{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;padding:4px 12px;border-radius:4px;letter-spacing:.06em;text-transform:uppercase;border:2px solid;display:inline-block}
+.pill-open{border-color:var(--verde3);color:var(--verde3);background:rgba(45,138,62,.12)}
+.pill-closed{border-color:var(--amarelo);color:var(--amarelo);background:rgba(245,200,0,.08)}
+.pill-finished{border-color:#e74c3c;color:#e74c3c;background:rgba(192,57,43,.1)}
+.pill-hidden{border-color:var(--muted2);color:var(--muted2)}
+.vencedores-box{background:rgba(45,138,62,.1);border:2px solid rgba(45,138,62,.3);border-radius:8px;padding:10px;margin-top:8px}
+.venc-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--verde3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.venc-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.venc-row:last-child{border:none}
+.add-rem-row{display:flex;gap:6px;margin-top:4px}
+.clientes-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,.07)}
+.clientes-table{width:100%;border-collapse:collapse;font-size:13px}
+.clientes-table th{background:var(--card2);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amarelo);padding:10px 12px;text-align:left;white-space:nowrap}
+.clientes-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text);vertical-align:top}
+.clientes-table tr:last-child td{border-bottom:none}
+.clientes-table tr:hover td{background:rgba(245,200,0,.03)}
+.cli-jogo-tag{display:inline-block;background:rgba(245,200,0,.1);color:var(--amarelo);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.cli-ganhou{color:var(--verde3);font-weight:700}
+.cli-search{width:100%;background:var(--card2);border:2px solid rgba(255,255,255,.08);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none;margin-bottom:14px;transition:.2s}
+.cli-search:focus{border-color:var(--amarelo)}
+.cli-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.cli-stat{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;text-align:center}
+.cli-stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--amarelo);line-height:1}
+.cli-stat-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.btn-export{padding:8px 16px;background:transparent;border:2px solid rgba(245,200,0,.3);border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--amarelo);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:.15s;margin-bottom:14px}
+.btn-export:hover{background:rgba(245,200,0,.08)}
+@media(max-width:600px){.tv-body{grid-template-columns:1fr}.jac-body{grid-template-columns:1fr}.a-grid2{grid-template-columns:1fr}.tv-header{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+
+<!-- COMPROVANTE -->
+<div class="comp-overlay" id="comprovante">
+  <div class="comp-box">
+    <div class="comp-header">
+      <svg width="40" height="40" viewBox="0 0 64 64" fill="none" style="display:block;margin:0 auto">
+        <path d="M32 4L8 14v18c0 14 10 24 24 28 14-4 24-14 24-28V14L32 4z" fill="#0f3d18" stroke="#f5c800" stroke-width="3"/>
+        <text x="32" y="42" text-anchor="middle" font-family="Bebas Neue,serif" font-size="26" fill="#f5c800">M</text>
+        <circle cx="20" cy="10" r="2.5" fill="#f5c800"/><circle cx="27" cy="7" r="2.5" fill="#f5c800"/>
+        <circle cx="32" cy="6" r="2.5" fill="#f5c800"/><circle cx="37" cy="7" r="2.5" fill="#f5c800"/>
+        <circle cx="44" cy="10" r="2.5" fill="#f5c800"/>
+      </svg>
+      <div class="comp-logo">BOLÃO DO MADÁ</div>
+      <div class="comp-sub">⚽ Copa do Mundo 2026 ⚽</div>
+    </div>
+    <div class="comp-body">
+      <div class="comp-num-area">
+        <div class="comp-num-lbl">Número da Aposta</div>
+        <div class="comp-num" id="comp-num">0001</div>
+      </div>
+      <div class="comp-placar" id="comp-placar">0 × 0</div>
+      <div class="comp-jogo" id="comp-jogo">— × —</div>
+      <div class="comp-row"><span>Nome</span><span id="comp-nome">—</span></div>
+      <div class="comp-row"><span>WhatsApp</span><span id="comp-wa">—</span></div>
+      <div class="comp-row"><span>Data/Hora</span><span id="comp-dt">—</span></div>
+      <div class="comp-row"><span>Encerra</span><span id="comp-enc">—</span></div>
+    </div>
+    <div class="comp-footer">Apresente no Madá para retirar seu prêmio 🏆<br><span>Rua Eusébio Alves Sarmento, 417 — Montes Claros</span></div>
+    <div class="comp-btns">
+      <button class="btn-fechar" onclick="fecharComp()">✓ ENTENDI</button>
+      <button class="btn-imprimir" onclick="window.print()">🖨 SALVAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SENHA -->
+<div class="modal-overlay" id="modal-admin">
+  <div class="modal-box">
+    <div class="modal-title">🔐 ÁREA ADMIN</div>
+    <div class="modal-sub">Somente para donos do Madá</div>
+    <div class="modal-field"><label>Usuário</label><input type="text" id="m-user" placeholder="usuario" autocomplete="username"></div>
+    <div class="modal-field"><label>Senha</label><input type="password" id="m-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')tentarLogin()"></div>
+    <div id="modal-err"></div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="tentarLogin()">ENTRAR</button>
+      <button class="btn-modal-cancel" onclick="fecharModal()">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-logo">
+    <svg width="34" height="34" viewBox="0 0 64 64" fill="none">
+      <path d="M32 4L8 14v18c0 14 10 24 24 28 14-4 24-14 24-28V14L32 4z" fill="#1a6b2a" stroke="#f5c800" stroke-width="2.5"/>
+      <text x="32" y="42" text-anchor="middle" font-family="Bebas Neue,serif" font-size="26" fill="#f5c800">M</text>
+      <circle cx="20" cy="10" r="2.5" fill="#f5c800"/><circle cx="27" cy="7" r="2.5" fill="#f5c800"/>
+      <circle cx="32" cy="6" r="2.5" fill="#f5c800"/><circle cx="37" cy="7" r="2.5" fill="#f5c800"/>
+      <circle cx="44" cy="10" r="2.5" fill="#f5c800"/>
+    </svg>
+    <div><div class="nav-logo-text">MADÁ</div><div class="nav-logo-sub">Bolão Copa 2026</div></div>
+  </div>
+  <button class="nav-btn active" id="nav-apostar" onclick="showView('cliente',this)">📱 Apostar</button>
+  <button class="nav-btn" id="nav-tv" onclick="showView('tv',this)">📺 Painel TV</button>
+  <button class="nav-btn" id="nav-admin" onclick="clicarAdmin(this)">⚙️ Admin</button>
+  <div class="nav-spacer"></div>
+  <span class="conn-badge conn-wait" id="conn-badge"><span class="conn-dot"></span> Conectando...</span>
+  <button class="btn-logout" id="btn-logout" onclick="logout()" style="display:none">🔓 Sair</button>
+</div>
+
+<!-- CLIENTE -->
+<div class="view active" id="view-cliente">
+  <div class="client-hero">
+    <div class="stars-row"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div>
+    <svg width="56" height="56" viewBox="0 0 64 64" fill="none" style="display:block;margin:0 auto 8px">
+      <path d="M32 4L8 14v18c0 14 10 24 24 28 14-4 24-14 24-28V14L32 4z" fill="#0f3d18" stroke="#f5c800" stroke-width="3"/>
+      <text x="32" y="42" text-anchor="middle" font-family="Bebas Neue,serif" font-size="26" fill="#f5c800">M</text>
+      <circle cx="20" cy="10" r="2.5" fill="#f5c800"/><circle cx="27" cy="7" r="2.5" fill="#f5c800"/>
+      <circle cx="32" cy="6" r="2.5" fill="#f5c800"/><circle cx="37" cy="7" r="2.5" fill="#f5c800"/>
+      <circle cx="44" cy="10" r="2.5" fill="#f5c800"/>
+    </svg>
+    <div class="hero-title">COPA DO <span>MUNDO</span><br>NO MADÁ</div>
+    <div class="hero-sub">⚽ Acerte o placar • Ganhe prêmios</div>
+    <div class="goool-text">GOOOL!!! GOOOL!!! GOOOL!!!</div>
+  </div>
+  <div class="client-body">
+    <div id="c-sem-jogos" style="display:none">
+      <div class="empty"><div class="empty-icon">⚽</div><div class="empty-text">Nenhum bolão aberto agora<br>fique de olho no painel!</div></div>
+    </div>
+    <div id="c-com-jogos">
+      <div class="section-label">Escolha o jogo para apostar</div>
+      <div class="jogos-grid" id="c-jogos-grid"></div>
+      <div id="c-form-wrap" style="display:none">
+        <div class="section-label">Faça sua aposta</div>
+        <div class="form-card">
+          <div class="form-title" id="c-form-title">🎯 APOSTA</div>
+          <div class="field"><label>Seu nome completo</label><input type="text" id="f-nome" placeholder="Ex: João Silva" maxlength="60"></div>
+          <div class="field"><label>CPF</label><input type="text" id="f-cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)"></div>
+          <div class="field"><label>WhatsApp</label><input type="tel" id="f-wa" placeholder="(38) 99999-9999" maxlength="20"></div>
+          <div class="placar-label">PALPITE — PLACAR EXATO</div>
+          <div class="placar-row">
+            <input class="placar-inp" type="number" id="f-g1" min="0" max="20" value="0">
+            <span class="placar-x">×</span>
+            <input class="placar-inp" type="number" id="f-g2" min="0" max="20" value="0">
+          </div>
+          <div class="placar-times-lbl" id="f-placar-lbl">Time A × Time B</div>
+          <div id="client-msg"></div>
+          <button class="btn-apostar" id="btn-apostar" onclick="fazerAposta()">⚽ CONFIRMAR APOSTA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TV -->
+<div class="view" id="view-tv">
+  <div class="tv-wrap" id="tv-fullscreen-target">
+    <div class="tv-header">
+      <div>
+        <div class="tv-logo">🏆 BOLÃO DO MADÁ</div>
+        <div class="tv-logo-sub">Copa do Mundo 2026</div>
+        <div class="tv-live-badge"><span class="live-dot"></span> AO VIVO</div>
+      </div>
+      <div class="tv-jogo-center">
+        <div class="tv-fase" id="tv-fase">—</div>
+        <div class="tv-times-str" id="tv-times">— × —</div>
+        <div class="tv-placar-live" id="tv-placar-live">? × ?</div>
+        <div class="tv-status-str" id="tv-status">Aguardando...</div>
+      </div>
+      <div class="tv-timer-area">
+        <div class="tv-timer-lbl">⏱ Encerra em</div>
+        <div class="tv-timer-val" id="tv-timer">--:--:--</div>
+      </div>
+    </div>
+    <div class="tv-toolbar">
+      <div class="tv-tabs" id="tv-tabs"></div>
+      <button class="btn-fullscreen" onclick="toggleFullscreen()" id="btn-fs">⛶ Tela cheia</button>
+    </div>
+    <div class="tv-body">
+      <div>
+        <div id="tv-vencedores-wrap"></div>
+        <div class="tv-lista-hdr">🎯 Apostas <span class="tv-count" id="tv-total">0</span></div>
+        <div id="tv-lista"></div>
+      </div>
+      <div>
+        <div class="tv-premios"><h3>🏅 PREMIAÇÃO</h3><div id="tv-premios-lista"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="view" id="view-admin">
+  <div style="max-width:980px;margin:0 auto">
+    <div class="admin-hdr">
+      <div class="admin-title">⚙️ ADMIN — BOLÃO DO MADÁ</div>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="adminTab('jogos',this)">⚽ Jogos</button>
+      <button class="admin-tab" onclick="adminTab('clientes',this)">👥 Clientes</button>
+    </div>
+    <div class="admin-panel active" id="panel-jogos">
+      <div class="novo-jogo-form">
+        <h3>➕ Criar novo jogo</h3>
+        <div class="a-grid2">
+          <div class="a-field"><label>Time 1</label><input class="a-input" type="text" id="a-time1" placeholder="Ex: Brasil"></div>
+          <div class="a-field"><label>Time 2</label><input class="a-input" type="text" id="a-time2" placeholder="Ex: Argentina"></div>
+          <div class="a-field"><label>Horário de início (encerra apostas)</label><input class="a-input" type="datetime-local" id="a-hora"></div>
+          <div class="a-field"><label>Fase</label>
+            <select class="a-select" id="a-fase">
+              <option>Fase de Grupos</option><option>Oitavas de Final</option>
+              <option>Quartas de Final</option><option>Semifinal</option><option>Final</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-criar" onclick="criarJogo()">✓ CRIAR JOGO</button>
+      </div>
+      <div id="jogos-admin-list"></div>
+    </div>
+    <div class="admin-panel" id="panel-clientes">
+      <div class="cli-stats" id="cli-stats"></div>
+      <input class="cli-search" type="text" placeholder="🔍 Buscar por nome, CPF ou WhatsApp..." oninput="renderClientes(this.value)">
+      <button class="btn-export" onclick="exportarCSV()">⬇️ Exportar CSV</button>
+      <div class="clientes-table-wrap">
+        <table class="clientes-table">
+          <thead><tr><th>#</th><th>Nome</th><th>CPF</th><th>WhatsApp</th><th>Jogo</th><th>Palpite</th><th>Horário</th><th>Status</th></tr></thead>
+          <tbody id="clientes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBbq_MM63mJ5ItGCMGsPxudqLzkUtAV6pI",
+  authDomain: "bolao-mada.firebaseapp.com",
+  databaseURL: "https://bolao-mada-default-rtdb.firebaseio.com",
+  projectId: "bolao-mada",
+  storageBucket: "bolao-mada.firebasestorage.app",
+  messagingSenderId: "1174861365",
+  appId: "1:1174861365:web:2af6c117dcf0f1aa07e37c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== CREDENCIAIS ADMIN =====
+const USERS = { 'mada': 'copa2026', 'admin': 'madalena@2026' };
+
+// ===== STATE LOCAL =====
+let jogos = {};
+let loggedIn = false;
+let tvJogoKey = null;
+let clienteJogoKey = null;
+
+// ===== CONEXÃO =====
+db.ref('.info/connected').on('value', snap => {
+  const badge = document.getElementById('conn-badge');
+  if (snap.val()) {
+    badge.className = 'conn-badge conn-ok';
+    badge.innerHTML = '<span class="conn-dot"></span> Online';
+  } else {
+    badge.className = 'conn-badge conn-err';
+    badge.innerHTML = '<span class="conn-dot"></span> Offline';
+  }
+});
+
+// ===== LISTENER TEMPO REAL =====
+db.ref('jogos').on('value', snap => {
+  jogos = snap.val() || {};
+  renderCliente();
+  renderTV();
+  if (loggedIn) renderAdmin();
+});
+
+// ===== UTILS =====
+function fmt(n){return String(n).padStart(4,'0')}
+function fmtDt(ts){if(!ts)return'—';return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function fmtHora(ts){if(!ts)return'—';return new Date(ts).toLocaleString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function getTimer(ts){const d=ts-Date.now();if(d<=0)return'00:00:00';const h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);return[h,m,s].map(x=>String(x).padStart(2,'0')).join(':')}
+function jogoStatus(j){if(j.encerrado)return'encerrado';if(Date.now()>=j.encTs)return'fechado';return'aberto'}
+function mascaraWa(wa){if(!wa)return'—';return wa.slice(0,6)+'****'+wa.slice(-4)}
+function mascaraCpf(el){let v=el.value.replace(/\D/g,'');if(v.length>11)v=v.slice(0,11);v=v.replace(/(\d{3})(\d)/,'$1.$2');v=v.replace(/(\d{3}\.\d{3})(\d)/,'$1.$2');v=v.replace(/(\d{3}\.\d{3}\.\d{3})(\d)/,'$1-$2');el.value=v;}
+function jogosArr(){return Object.entries(jogos).map(([k,v])=>({...v,_key:k}))}
+
+// ===== NAV =====
+function showView(v,btn){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(v==='tv')renderTV();
+  if(v==='admin')renderAdmin();
+  if(v==='cliente')renderCliente();
+}
+
+// ===== MODAL ADMIN =====
+function clicarAdmin(btn){
+  if(loggedIn){showView('admin',btn);return}
+  document.getElementById('m-user').value='';
+  document.getElementById('m-pass').value='';
+  document.getElementById('modal-err').innerHTML='';
+  document.getElementById('modal-admin').classList.add('show');
+  setTimeout(()=>document.getElementById('m-user').focus(),100);
+  window._adminBtn=btn;
+}
+function fecharModal(){document.getElementById('modal-admin').classList.remove('show')}
+function tentarLogin(){
+  const u=document.getElementById('m-user').value.trim();
+  const p=document.getElementById('m-pass').value;
+  if(USERS[u]===p){
+    loggedIn=true;
+    document.getElementById('btn-logout').style.display='';
+    fecharModal();
+    showView('admin',window._adminBtn);
+  } else {
+    document.getElementById('modal-err').innerHTML='<div class="modal-err">Usuário ou senha incorretos.</div>';
+    setTimeout(()=>document.getElementById('modal-err').innerHTML='',3000);
+  }
+}
+function logout(){
+  loggedIn=false;
+  document.getElementById('btn-logout').style.display='none';
+  showView('cliente',document.getElementById('nav-apostar'));
+}
+
+// ===== ADMIN TABS =====
+function adminTab(tab,btn){
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='clientes')renderClientes('');
+}
+
+// ===== CLIENTE =====
+function renderCliente(){
+  const abertos=jogosArr().filter(j=>!j.oculto&&!j.encerrado&&Date.now()<j.encTs);
+  const sem=document.getElementById('c-sem-jogos');
+  const com=document.getElementById('c-com-jogos');
+  if(!abertos.length){sem.style.display='block';com.style.display='none';return}
+  sem.style.display='none';com.style.display='block';
+  document.getElementById('c-jogos-grid').innerHTML=abertos.map(j=>`
+    <div class="jogo-card-sel ${clienteJogoKey===j._key?'selected':''}" onclick="selecionarJogo('${j._key}')">
+      <div class="jogo-fase-tag">${j.fase}</div>
+      <div class="jogo-times-row"><span>${j.time1}</span><span class="jogo-vs-badge">×</span><span>${j.time2}</span></div>
+      <div class="jogo-info-sm">Encerra: ${fmtDt(j.encTs)} <span class="badge-aberto">Aberto</span></div>
+      <div class="timer-strip">
+        <div class="timer-lbl">⏱ Encerra em</div>
+        <div class="timer-v" id="ctimer-${j._key}">--:--:--</div>
+      </div>
+    </div>`).join('');
+  if(clienteJogoKey){
+    const j=jogos[clienteJogoKey];
+    if(j&&!j.encerrado&&Date.now()<j.encTs){
+      document.getElementById('c-form-wrap').style.display='block';
+      document.getElementById('c-form-title').textContent='🎯 APOSTA — '+j.time1+' × '+j.time2;
+      document.getElementById('f-placar-lbl').textContent=j.time1+' × '+j.time2;
+      document.getElementById('btn-apostar').disabled=false;
+      document.getElementById('btn-apostar').textContent='⚽ CONFIRMAR APOSTA';
+    } else {document.getElementById('c-form-wrap').style.display='none';}
+  } else {document.getElementById('c-form-wrap').style.display='none';}
+}
+
+function selecionarJogo(key){
+  clienteJogoKey=key;
+  document.getElementById('client-msg').innerHTML='';
+  document.getElementById('f-g1').value='0';document.getElementById('f-g2').value='0';
+  document.getElementById('f-nome').value='';document.getElementById('f-wa').value='';
+  document.getElementById('f-cpf').value='';
+  renderCliente();
+  setTimeout(()=>{const el=document.getElementById('c-form-wrap');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},100);
+}
+
+function fazerAposta(){
+  const nome=document.getElementById('f-nome').value.trim();
+  const cpf=document.getElementById('f-cpf').value.trim();
+  const wa=document.getElementById('f-wa').value.trim();
+  const g1=parseInt(document.getElementById('f-g1').value)||0;
+  const g2=parseInt(document.getElementById('f-g2').value)||0;
+  const msg=document.getElementById('client-msg');
+  if(!nome){msg.innerHTML='<div class="msg-err">Informe seu nome.</div>';return}
+  if(!cpf||cpf.length<14){msg.innerHTML='<div class="msg-err">Informe seu CPF completo.</div>';return}
+  if(!wa){msg.innerHTML='<div class="msg-err">Informe seu WhatsApp.</div>';return}
+  if(!clienteJogoKey){msg.innerHTML='<div class="msg-err">Selecione um jogo acima.</div>';return}
+  const j=jogos[clienteJogoKey];
+  if(!j||j.encerrado||Date.now()>=j.encTs){msg.innerHTML='<div class="msg-err">Apostas encerradas!</div>';return}
+
+  // Verifica CPF duplicado no jogo
+  const apostasArr=j.apostas?Object.values(j.apostas):[];
+  if(apostasArr.some(a=>a.cpf===cpf)){
+    msg.innerHTML='<div class="msg-err">Este CPF já possui uma aposta neste jogo!</div>';return}
+
+  const key=g1+'-'+g2;
+  const qtdPlacar=apostasArr.filter(a=>a.placarKey===key).length;
+  const maxRep=(j.premios?Object.values(j.premios):[] ).length||1;
+  if(qtdPlacar>=maxRep){
+    msg.innerHTML='<div class="msg-err">Este placar atingiu o limite ('+maxRep+' iguais). Escolha outro!</div>';return}
+
+  // Pega próximo número de aposta global
+  db.ref('nextId').transaction(cur=>(cur||0)+1, (err,committed,snap)=>{
+    if(err||!committed){msg.innerHTML='<div class="msg-err">Erro ao registrar. Tente novamente.</div>';return}
+    const numId=snap.val();
+    const aposta={id:numId,num:fmt(numId),nome,cpf,wa,g1,g2,placarKey:key,ts:Date.now(),ganhou:false,premiacao:null};
+    db.ref('jogos/'+clienteJogoKey+'/apostas').push(aposta).then(()=>{
+      msg.innerHTML='<div class="msg-ok">✅ Aposta #'+aposta.num+' registrada com sucesso!</div>';
+      mostrarComp(aposta,j);
+      document.getElementById('f-nome').value='';document.getElementById('f-wa').value='';
+      document.getElementById('f-cpf').value='';
+      document.getElementById('f-g1').value='0';document.getElementById('f-g2').value='0';
+    }).catch(()=>{msg.innerHTML='<div class="msg-err">Erro ao salvar. Verifique sua conexão.</div>';});
+  });
+}
+
+// ===== COMPROVANTE =====
+function mostrarComp(a,j){
+  document.getElementById('comp-num').textContent=a.num;
+  document.getElementById('comp-placar').textContent=a.g1+' × '+a.g2;
+  document.getElementById('comp-jogo').textContent=j.time1+' × '+j.time2;
+  document.getElementById('comp-nome').textContent=a.nome;
+  document.getElementById('comp-wa').textContent=a.wa;
+  document.getElementById('comp-dt').textContent=fmtDt(a.ts);
+  document.getElementById('comp-enc').textContent=fmtDt(j.encTs);
+  document.getElementById('comprovante').classList.add('show');
+}
+function fecharComp(){document.getElementById('comprovante').classList.remove('show')}
+
+// ===== FULLSCREEN =====
+function toggleFullscreen(){
+  const el=document.getElementById('tv-fullscreen-target');
+  const btn=document.getElementById('btn-fs');
+  if(!document.fullscreenElement){(el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen).call(el);btn.textContent='✕ Sair da tela cheia';}
+  else{(document.exitFullscreen||document.webkitExitFullscreen||document.mozCancelFullScreen).call(document);btn.textContent='⛶ Tela cheia';}
+}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.getElementById('btn-fs').textContent='⛶ Tela cheia';});
+
+// ===== TV =====
+function renderTV(){
+  const vis=jogosArr().filter(j=>!j.oculto);
+  const tabs=document.getElementById('tv-tabs');
+  if(!vis.length){
+    tabs.innerHTML='';
+    ['tv-fase','tv-times','tv-status'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('tv-placar-live').textContent='? × ?';
+    document.getElementById('tv-timer').textContent='--:--:--';
+    document.getElementById('tv-lista').innerHTML='<div class="empty"><div class="empty-icon">⚽</div><div class="empty-text">Sem jogos no momento</div></div>';
+    document.getElementById('tv-premios-lista').innerHTML='';
+    document.getElementById('tv-total').textContent='0';
+    document.getElementById('tv-vencedores-wrap').innerHTML='';
+    return;
+  }
+  if(!tvJogoKey||!jogos[tvJogoKey])tvJogoKey=vis[0]._key;
+  tabs.innerHTML=vis.map(j=>`<button class="tv-tab ${j._key===tvJogoKey?'active':''}" onclick="tvSel('${j._key}')">${j.time1} × ${j.time2}</button>`).join('');
+  const j=jogos[tvJogoKey];
+  if(!j)return;
+  const st=jogoStatus(j);
+  document.getElementById('tv-fase').textContent=j.fase;
+  document.getElementById('tv-times').textContent=j.time1+' × '+j.time2;
+  document.getElementById('tv-placar-live').textContent=j.placarLive||'? × ?';
+  document.getElementById('tv-status').textContent=j.encerrado?'⏹ Encerrado':st==='fechado'?'🔒 Apostas encerradas':'🔓 Apostas abertas';
+  const apostasArr=j.apostas?Object.values(j.apostas):[];
+  document.getElementById('tv-total').textContent=apostasArr.length;
+
+  // Vencedores destaque
+  const vencWrap=document.getElementById('tv-vencedores-wrap');
+  const vencArr=j.vencedores?Object.values(j.vencedores):[];
+  if(j.encerrado&&vencArr.length){
+    vencWrap.innerHTML=`
+      <div style="margin-bottom:14px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;color:var(--verde3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid rgba(45,138,62,.3)">🏆 VENCEDORES DO BOLÃO</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+          ${vencArr.map((v,vi)=>`
+            <div class="vencedor-destaque">
+              <div class="venc-trophy">${vi===0?'🥇':vi===1?'🥈':'🥉'}</div>
+              <div class="venc-pos">${vi+1}º lugar</div>
+              <div class="venc-nome-big">${v.nome}</div>
+              <div class="venc-palpite">${v.g1} × ${v.g2}</div>
+              <div class="venc-hora">⏱ ${fmtHora(v.ts)}</div>
+              <div class="venc-premio">${v.premiacao||''}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else {vencWrap.innerHTML='';}
+
+  // Lista apostas
+  const lista=document.getElementById('tv-lista');
+  if(!apostasArr.length){lista.innerHTML='<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">Aguardando apostas...</div></div>';}
+  else lista.innerHTML=[...apostasArr].sort((a,b)=>b.ts-a.ts).slice(0,30).map(a=>`
+    <div class="aposta-item ${a.ganhou?'ganhador':''}">
+      <div class="aposta-num">#${a.num}</div>
+      <div class="aposta-nome-area">
+        <span class="aposta-nome-txt">${a.nome}</span>
+        <span class="aposta-wa-mask">${mascaraWa(a.wa)}</span>
+      </div>
+      <div style="flex:1;font-size:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center">⏱ ${fmtHora(a.ts)}</div>
+      <div class="aposta-palpite">
+        <div class="aposta-palpite-num">${a.g1}×${a.g2}</div>
+        ${a.ganhou?`<span class="aposta-ganhou-badge">🏆 ${a.premiacao||'Ganhador'}</span>`:''}
+      </div>
+    </div>`).join('');
+
+  // Prêmios
+  const premiosArr=j.premios?Object.values(j.premios):[];
+  document.getElementById('tv-premios-lista').innerHTML=premiosArr.map((p,i)=>{
+    const cls=i===0?'pos1':i===1?'pos2':i===2?'pos3':'posN';
+    const g=vencArr[i];
+    return`<div class="premio-item"><div class="premio-pos ${cls}">${i+1}º</div><div><div class="premio-desc">${p.desc||'—'}</div>${g?`<div class="premio-ganhador">🏆 ${g.nome}</div>`:''}</div></div>`;
+  }).join('');
+}
+function tvSel(key){tvJogoKey=key;renderTV()}
+
+// ===== ADMIN JOGOS =====
+function renderAdmin(){
+  if(!loggedIn)return;
+  var list=document.getElementById('jogos-admin-list');
+  var arr=jogosArr();
+  if(!arr.length){list.innerHTML='<div class="empty"><div class="empty-icon">⚽</div><div class="empty-text">Nenhum jogo criado ainda</div></div>';return}
+  var html='';
+  var reversed=[...arr].reverse();
+  for(var ri=0;ri<reversed.length;ri++){
+    var j=reversed[ri];
+    var k=j._key;
+    var st=jogoStatus(j);
+    var pillCls=st==='aberto'?'pill-open':st==='fechado'?'pill-closed':'pill-finished';
+    var pillTxt=st==='aberto'?'Aberto':st==='fechado'?'Fechado':'Encerrado';
+    var premiosArr=j.premios?Object.values(j.premios):[];
+    var apostasArr=j.apostas?Object.values(j.apostas):[];
+    var vencArr=j.vencedores?Object.values(j.vencedores):[];
+    
+    var premiosHtml='';
+    for(var pi=0;pi<premiosArr.length;pi++){
+      var p=premiosArr[pi];
+      premiosHtml+='<div class="premios-mini-row">';
+      premiosHtml+='<span>'+(pi+1)+'º</span>';
+      premiosHtml+='<input type="text" value="'+(p.desc||'')+'" placeholder="Premio '+(pi+1)+'" data-jk="'+k+'" data-pi="'+pi+'" onchange="salvarPremio(this)">';
+      premiosHtml+='</div>';
+    }
+    
+    var vencBox='';
+    if(j.encerrado&&vencArr.length){
+      vencBox='<div class="vencedores-box"><div class="venc-title">Vencedores - Placar: '+j.placarLive+'</div>';
+      for(var vi=0;vi<vencArr.length;vi++){
+        var v=vencArr[vi];
+        vencBox+='<div class="venc-row"><span>'+(vi+1)+'o '+v.nome+' (#'+v.num+') - '+fmtHora(v.ts)+'</span>';
+        vencBox+='<span style="color:var(--amarelo);font-family:Bebas Neue,sans-serif;font-size:18px">'+v.g1+'x'+v.g2+'</span></div>';
+      }
+      vencBox+='</div>';
+    } else if(j.encerrado){
+      vencBox='<div style="color:var(--muted2);font-size:12px;margin-top:8px">Ninguem acertou ('+j.placarLive+')</div>';
+    }
+    
+    html+='<div class="jogo-admin-card '+(j.oculto?'oculto':'')+'">';
+    html+='<div class="jac-header">';
+    html+='<div class="jac-times">'+j.time1+' x '+j.time2+'</div>';
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+    html+='<span class="status-pill '+pillCls+'">'+pillTxt+'</span>';
+    if(j.oculto) html+='<span class="status-pill pill-hidden">Oculto</span>';
+    html+='</div></div>';
+    html+='<div class="jac-info">'+j.fase+' | '+fmtDt(j.encTs)+' | '+apostasArr.length+' aposta(s)</div>';
+    html+='<div class="jac-body">';
+    html+='<div><div class="jac-sub">Premios (por ordem de chegada)</div>';
+    html+=premiosHtml;
+    html+='<div class="add-rem-row">';
+    html+='<button class="btn-jac muted" data-k="'+k+'" onclick="addPremio(this.dataset.k)">+ Premio</button>';
+    html+='<button class="btn-jac danger" data-k="'+k+'" onclick="remPremio(this.dataset.k)">- Remover</button>';
+    html+='</div></div>';
+    html+='<div><div class="jac-sub">Placar ao vivo</div>';
+    html+='<div class="jac-placar-row">';
+    html+='<input class="jac-placar-inp" type="number" id="ag1-'+k+'" min="0" max="20" value="'+(j.placarLiveG1||0)+'">';
+    html+='<span class="jac-x">x</span>';
+    html+='<input class="jac-placar-inp" type="number" id="ag2-'+k+'" min="0" max="20" value="'+(j.placarLiveG2||0)+'">';
+    html+='</div>';
+    html+='<button class="btn-jac primary" data-k="'+k+'" onclick="atualizarPlacar(this.dataset.k)" style="margin-top:6px;width:100%">Atualizar Placar</button>';
+    html+='</div></div>';
+    html+=vencBox;
+    html+='<div class="jac-btns" style="margin-top:10px">';
+    if(!j.encerrado) html+='<button class="btn-jac danger" data-k="'+k+'" onclick="encerrarJogo(this.dataset.k)">Finalizar e calcular</button>';
+    html+='<button class="btn-jac muted" data-k="'+k+'" onclick="toggleOculto(this.dataset.k)">'+(j.oculto?'Mostrar':'Ocultar')+' no painel</button>';
+    html+='<button class="btn-jac danger" data-k="'+k+'" onclick="excluirJogo(this.dataset.k)" style="font-size:11px;margin-left:auto">Excluir</button>';
+    html+='</div></div>';
+  }
+  list.innerHTML=html;
+}
+
+function salvarPremio(el){
+  var k=el.dataset.jk;
+  var pi=el.dataset.pi;
+  db.ref('jogos/'+k+'/premios/'+pi+'/desc').set(el.value);
+}
+
+function criarJogo(){
+  const t1=document.getElementById('a-time1').value.trim();
+  const t2=document.getElementById('a-time2').value.trim();
+  const hora=document.getElementById('a-hora').value;
+  const fase=document.getElementById('a-fase').value;
+  if(!t1||!t2||!hora){alert('Preencha Time 1, Time 2 e o horário.');return}
+  const novoJogo={time1:t1,time2:t2,fase,encTs:new Date(hora).getTime(),criadoEm:Date.now(),
+    premios:{0:{desc:'Balde Budweiser 600ml ×5'}},
+    placarLive:null,placarLiveG1:0,placarLiveG2:0,
+    encerrado:false,oculto:false};
+  db.ref('jogos').push(novoJogo).then(()=>{
+    document.getElementById('a-time1').value='';
+    document.getElementById('a-time2').value='';
+    document.getElementById('a-hora').value='';
+    alert('✅ Jogo criado!');
+  });
+}
+
+function atualizarPlacar(k){
+  const g1=parseInt(document.getElementById('ag1-'+k).value)||0;
+  const g2=parseInt(document.getElementById('ag2-'+k).value)||0;
+  db.ref('jogos/'+k).update({placarLive:g1+'x'+g2,placarLiveG1:g1,placarLiveG2:g2});
+}
+
+function encerrarJogo(k){
+  const j=jogos[k];
+  if(!j.placarLive){alert('Atualize o placar antes de finalizar.');return}
+  if(!confirm('Finalizar ' + j.time1 + ' x ' + j.time2 + ' com placar ' + j.placarLive + '?'))return;
+  var parts=j.placarLive.split("x");var fg1=parseInt(parts[0])||0;var fg2=parseInt(parts[1])||0;
+  const key=fg1+'-'+fg2;
+  const apostasArr=j.apostas?Object.values(j.apostas):[];
+  const acertaram=[...apostasArr.filter(a=>a.placarKey===key)].sort((a,b)=>a.ts-b.ts);
+  const premiosArr=j.premios?Object.values(j.premios):[];
+  var updates={};updates['jogos/'+k+'/encerrado']=true;
+  const vencedores={};
+  acertaram.forEach((a,i)=>{
+    if(i<premiosArr.length){
+      a.ganhou=true;a.premiacao=premiosArr[i].desc;
+      vencedores[i]=a;
+      // Marca ganhou nas apostas originais
+      if(j.apostas){
+        Object.entries(j.apostas).forEach(([fk,fa])=>{if(fa.num===a.num){updates['jogos/'+k+'/apostas/'+fk+'/ganhou']=true;updates['jogos/'+k+'/apostas/'+fk+'/premiacao']=premiosArr[i].desc;}});
+      }
+    }
+  });
+  updates['jogos/'+k+'/vencedores']=vencedores;
+  db.ref().update(updates).then(()=>{
+    alert(acertaram.length?'🏆 '+acertaram.length+' vencedor(es) por ordem de chegada!':'😮 Ninguém acertou o placar exato.');
+  });
+}
+
+function toggleOculto(k){db.ref('jogos/'+k+'/oculto').transaction(v=>!v)}
+function excluirJogo(k){if(!confirm('Excluir este jogo e todas as apostas?'))return;db.ref('jogos/'+k).remove()}
+function addPremio(k){
+  const j=jogos[k];
+  const arr=j.premios?Object.values(j.premios):[];
+  if(arr.length>=10)return;
+  db.ref('jogos/'+k+'/premios/'+arr.length).set({desc:''}).then(()=>renderAdmin());
+}
+function remPremio(k){
+  const j=jogos[k];
+  const arr=j.premios?Object.values(j.premios):[];
+  if(arr.length<=1)return;
+  db.ref('jogos/'+k+'/premios/'+(arr.length-1)).remove().then(()=>renderAdmin());
+}
+
+// ===== CLIENTES =====
+function todosClientes(){
+  const lista=[];
+  jogosArr().forEach(j=>{
+    if(j.apostas)Object.values(j.apostas).forEach(a=>{lista.push({...a,jogoNome:j.time1+' × '+j.time2});});
+  });
+  return lista;
+}
+function renderClientes(filtro=''){
+  const clientes=todosClientes();
+  const f=(filtro||'').toLowerCase();
+  const filtrados=f?clientes.filter(c=>c.nome.toLowerCase().includes(f)||(c.cpf||'').includes(f)||(c.wa||'').includes(f)):clientes;
+  const uniqCpf=new Set(clientes.map(c=>c.cpf)).size;
+  document.getElementById('cli-stats').innerHTML=`
+    <div class="cli-stat"><div class="cli-stat-val">${clientes.length}</div><div class="cli-stat-lbl">Total apostas</div></div>
+    <div class="cli-stat"><div class="cli-stat-val">${uniqCpf}</div><div class="cli-stat-lbl">CPFs únicos</div></div>
+    <div class="cli-stat"><div class="cli-stat-val">${clientes.filter(c=>c.ganhou).length}</div><div class="cli-stat-lbl">Ganhadores</div></div>
+    <div class="cli-stat"><div class="cli-stat-val">${Object.keys(jogos).length}</div><div class="cli-stat-lbl">Jogos criados</div></div>`;
+  const tbody=document.getElementById('clientes-tbody');
+  if(!filtrados.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--muted2);padding:30px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase">Nenhum cliente encontrado</td></tr>`;return;}
+  tbody.innerHTML=filtrados.map(c=>`
+    <tr>
+      <td><span style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--muted2)">#${c.num}</span></td>
+      <td><strong>${c.nome}</strong></td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700">${c.cpf||'—'}</td>
+      <td>${c.wa||'—'}</td>
+      <td><span class="cli-jogo-tag">${c.jogoNome}</span></td>
+      <td style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amarelo)">${c.g1}×${c.g2}</td>
+      <td style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--muted)">${fmtDt(c.ts)}</td>
+      <td>${c.ganhou?`<span class="cli-ganhou">🏆 ${c.premiacao||'Ganhador'}</span>`:'<span style="color:var(--muted2)">—</span>'}</td>
+    </tr>`).join('');
+}
+function exportarCSV(){
+  const clientes=todosClientes();
+  if(!clientes.length){alert('Nenhum cliente para exportar.');return}
+  const linhas=[['#','Nome','CPF','WhatsApp','Jogo','Palpite','Horário','Status']];
+  clientes.forEach(c=>linhas.push([c.num,c.nome,c.cpf||'',c.wa||'',c.jogoNome,c.g1+'×'+c.g2,fmtDt(c.ts),c.ganhou?(c.premiacao||'Ganhador'):'']));
+  const csv=linhas.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='clientes_bolao_mada.csv';a.click();
+}
+
+// ===== TICK TIMERS =====
+setInterval(()=>{
+  jogosArr().filter(j=>!j.oculto&&!j.encerrado).forEach(j=>{
+    const el=document.getElementById('ctimer-'+j._key);
+    if(el)el.textContent=getTimer(j.encTs);
+  });
+  if(tvJogoKey&&jogos[tvJogoKey]){
+    const j=jogos[tvJogoKey];
+    const el=document.getElementById('tv-timer');
+    if(el)el.textContent=j.encerrado?'Encerrado':getTimer(j.encTs);
+  }
+},1000);
+
+renderCliente();
+</script>
+</body>
+</html>
