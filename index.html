@@ -242,6 +242,90 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .btn-export{padding:8px 16px;background:transparent;border:2px solid rgba(245,200,0,.3);border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;color:var(--amarelo);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:.15s;margin-bottom:14px}
 .btn-export:hover{background:rgba(245,200,0,.08)}
 @media(max-width:600px){.tv-body{grid-template-columns:1fr}.jac-body{grid-template-columns:1fr}.a-grid2{grid-template-columns:1fr}.tv-header{flex-direction:column;text-align:center}}
+
+/* ===== TELA CHEIA — TELÃO / PAINEL LED ===== */
+#tv-fullscreen-target:-webkit-full-screen,
+#tv-fullscreen-target:-moz-full-screen,
+#tv-fullscreen-target:fullscreen {
+  overflow-y: auto;
+  background: linear-gradient(180deg,#051008 0%,#0a2e10 100%);
+}
+#tv-fullscreen-target:fullscreen .tv-logo,
+#tv-fullscreen-target:-webkit-full-screen .tv-logo { font-size: 52px !important; }
+#tv-fullscreen-target:fullscreen .tv-logo-sub,
+#tv-fullscreen-target:-webkit-full-screen .tv-logo-sub { font-size: 20px !important; }
+#tv-fullscreen-target:fullscreen .tv-live-badge,
+#tv-fullscreen-target:-webkit-full-screen .tv-live-badge { font-size: 26px !important; padding: 6px 16px !important; }
+#tv-fullscreen-target:fullscreen .live-dot,
+#tv-fullscreen-target:-webkit-full-screen .live-dot { width: 14px !important; height: 14px !important; }
+#tv-fullscreen-target:fullscreen .tv-fase,
+#tv-fullscreen-target:-webkit-full-screen .tv-fase { font-size: 28px !important; }
+#tv-fullscreen-target:fullscreen .tv-times-str,
+#tv-fullscreen-target:-webkit-full-screen .tv-times-str { font-size: 90px !important; }
+#tv-fullscreen-target:fullscreen .tv-placar-live,
+#tv-fullscreen-target:-webkit-full-screen .tv-placar-live { font-size: 140px !important; }
+#tv-fullscreen-target:fullscreen .tv-status-str,
+#tv-fullscreen-target:-webkit-full-screen .tv-status-str { font-size: 26px !important; }
+#tv-fullscreen-target:fullscreen .tv-timer-lbl,
+#tv-fullscreen-target:-webkit-full-screen .tv-timer-lbl { font-size: 22px !important; }
+#tv-fullscreen-target:fullscreen .tv-timer-val,
+#tv-fullscreen-target:-webkit-full-screen .tv-timer-val { font-size: 70px !important; }
+#tv-fullscreen-target:fullscreen .tv-header,
+#tv-fullscreen-target:-webkit-full-screen .tv-header { padding: 20px 32px !important; border-bottom: 6px solid var(--amarelo) !important; }
+#tv-fullscreen-target:fullscreen .tv-toolbar,
+#tv-fullscreen-target:-webkit-full-screen .tv-toolbar { padding: 12px 24px !important; }
+#tv-fullscreen-target:fullscreen .tv-tab,
+#tv-fullscreen-target:-webkit-full-screen .tv-tab { font-size: 24px !important; padding: 10px 22px !important; }
+#tv-fullscreen-target:fullscreen .btn-fullscreen,
+#tv-fullscreen-target:-webkit-full-screen .btn-fullscreen { font-size: 22px !important; padding: 10px 20px !important; }
+#tv-fullscreen-target:fullscreen .tv-body,
+#tv-fullscreen-target:-webkit-full-screen .tv-body { padding: 20px 28px !important; gap: 20px !important; grid-template-columns: 1fr 420px !important; }
+#tv-fullscreen-target:fullscreen .tv-lista-hdr,
+#tv-fullscreen-target:-webkit-full-screen .tv-lista-hdr { font-size: 30px !important; padding-bottom: 14px !important; margin-bottom: 14px !important; }
+#tv-fullscreen-target:fullscreen .tv-count,
+#tv-fullscreen-target:-webkit-full-screen .tv-count { font-size: 36px !important; padding: 4px 16px !important; }
+#tv-fullscreen-target:fullscreen .aposta-item,
+#tv-fullscreen-target:-webkit-full-screen .aposta-item { padding: 18px 24px !important; margin-bottom: 10px !important; border-radius: 12px !important; }
+#tv-fullscreen-target:fullscreen .aposta-num,
+#tv-fullscreen-target:-webkit-full-screen .aposta-num { font-size: 36px !important; min-width: 60px !important; }
+#tv-fullscreen-target:fullscreen .aposta-nome-txt,
+#tv-fullscreen-target:-webkit-full-screen .aposta-nome-txt { font-size: 34px !important; }
+#tv-fullscreen-target:fullscreen .aposta-wa-mask,
+#tv-fullscreen-target:-webkit-full-screen .aposta-wa-mask { font-size: 24px !important; }
+#tv-fullscreen-target:fullscreen .aposta-palpite-num,
+#tv-fullscreen-target:-webkit-full-screen .aposta-palpite-num { font-size: 56px !important; }
+#tv-fullscreen-target:fullscreen .aposta-ganhou-badge,
+#tv-fullscreen-target:-webkit-full-screen .aposta-ganhou-badge { font-size: 18px !important; padding: 6px 16px !important; }
+#tv-fullscreen-target:fullscreen .tv-premios,
+#tv-fullscreen-target:-webkit-full-screen .tv-premios { padding: 20px !important; }
+#tv-fullscreen-target:fullscreen .tv-premios h3,
+#tv-fullscreen-target:-webkit-full-screen .tv-premios h3 { font-size: 30px !important; margin-bottom: 16px !important; }
+#tv-fullscreen-target:fullscreen .premio-item,
+#tv-fullscreen-target:-webkit-full-screen .premio-item { padding: 14px 0 !important; gap: 14px !important; }
+#tv-fullscreen-target:fullscreen .premio-pos,
+#tv-fullscreen-target:-webkit-full-screen .premio-pos { font-size: 56px !important; min-width: 56px !important; }
+#tv-fullscreen-target:fullscreen .premio-desc,
+#tv-fullscreen-target:-webkit-full-screen .premio-desc { font-size: 28px !important; }
+#tv-fullscreen-target:fullscreen .premio-ganhador,
+#tv-fullscreen-target:-webkit-full-screen .premio-ganhador { font-size: 24px !important; }
+#tv-fullscreen-target:fullscreen .vencedor-destaque,
+#tv-fullscreen-target:-webkit-full-screen .vencedor-destaque { padding: 24px !important; border-radius: 16px !important; }
+#tv-fullscreen-target:fullscreen .venc-trophy,
+#tv-fullscreen-target:-webkit-full-screen .venc-trophy { font-size: 80px !important; }
+#tv-fullscreen-target:fullscreen .venc-pos,
+#tv-fullscreen-target:-webkit-full-screen .venc-pos { font-size: 32px !important; }
+#tv-fullscreen-target:fullscreen .venc-nome-big,
+#tv-fullscreen-target:-webkit-full-screen .venc-nome-big { font-size: 72px !important; }
+#tv-fullscreen-target:fullscreen .venc-palpite,
+#tv-fullscreen-target:-webkit-full-screen .venc-palpite { font-size: 60px !important; }
+#tv-fullscreen-target:fullscreen .venc-hora,
+#tv-fullscreen-target:-webkit-full-screen .venc-hora { font-size: 26px !important; }
+#tv-fullscreen-target:fullscreen .venc-premio,
+#tv-fullscreen-target:-webkit-full-screen .venc-premio { font-size: 26px !important; }
+#tv-fullscreen-target:fullscreen [style*="font-size:10px"],
+#tv-fullscreen-target:-webkit-full-screen [style*="font-size:10px"] { font-size: 22px !important; }
+#tv-fullscreen-target:fullscreen [style*="font-size:13px"],
+#tv-fullscreen-target:-webkit-full-screen [style*="font-size:13px"] { font-size: 26px !important; }
 </style>
 </head>
 <body>
